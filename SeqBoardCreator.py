@@ -9,7 +9,7 @@ class SeqBoardCreator:
         self.paddingTopPixel        = defaultPaddingPixel
         self.paddingBottomPixel     = defaultPaddingPixel
         self.circleWidthPixel       = int((self.params.widthPixel / self.params.numOfCols) * 0.25)
-        self.circleHeightPixel      = int((self.params.heightPixel / self.params.numOfRows) * 0.25)
+        self.circleHeightPixel      = self.circleWidthPixel
 
     def create(self):
         print("create")
@@ -31,12 +31,14 @@ class SeqBoardCreator:
     def _createNumImageWithinCircle(self, circleImagePath, circleWidthPixel, circleHeightPixel, number):
         print("_createNumImageWithinCircle")
         circleImage = self._createResizedImage(circleImagePath, circleWidthPixel, circleHeightPixel)
+
         cv2.putText(circleImage,
                     "{}".format(number),
                     (int(circleWidthPixel * 0.5), int(circleHeightPixel * 0.5)),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1.0,
-                    (255, 255, 255), 3)
+                    (255, 255, 255, 255),
+                    4)
         return circleImage
 
     def _createBackgroundImage(self):
@@ -53,7 +55,16 @@ class SeqBoardCreator:
         return cv2.resize(img, (targetWidthPixel, targetHeightPixel))
 
     def _overlayImage(self, baseImage, overlayImage, offsetX, offsetY):
-        baseImage[offsetY:offsetY + overlayImage.shape[0], offsetX:offsetX + overlayImage.shape[1]] = overlayImage
+        alpha_overlay = overlayImage[:, :, 3] / 255.0
+        alpha_base = 1.0 - alpha_overlay
+
+        y1, y2 = offsetY, offsetY + overlayImage.shape[0]
+        x1, x2 = offsetX, offsetX + overlayImage.shape[1]
+
+        for c in range(0, 3):
+            baseImage[y1:y2, x1:x2, c] = (alpha_overlay * overlayImage[:, :, c] + alpha_base * baseImage[y1:y2, x1:x2, c])
+
+        ## baseImage[offsetY:offsetY + overlayImage.shape[0], offsetX:offsetX + overlayImage.shape[1]] = overlayImage
         ## baseImage = self.overlay_transparent(baseImage, overlayImage, offsetX, offsetY)
 
     def _writeImageFiles(self, outputImages, temp):
