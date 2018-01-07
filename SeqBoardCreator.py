@@ -18,10 +18,15 @@ class SeqBoardCreator:
     def _cretaeSequenceBoardImages(self):
         print("_cretaeSequenceBoardImages")
         pickedOutputImages = self._getOverlayImages(self.params.pickedImagePaths)
-        notPickedOutputImages = self._getOverlayImages(self.params.originImagePaths.remove(self.params.pickedImagePaths))
 
-        self._writeImageFiles(pickedOutputImages)
-        self._writeImageFiles(notPickedOutputImages)
+        notPickedOutputImagePaths = list(self.params.originImagePaths)
+        for pickedImagePath in self.params.pickedImagePaths:
+            notPickedOutputImagePaths.remove(pickedImagePath)
+
+        notPickedOutputImages = self._getOverlayImages(notPickedOutputImagePaths)
+
+        self._writeImageFiles(pickedOutputImages, 1)
+        self._writeImageFiles(notPickedOutputImages, 2)
 
     def _createNumImageWithinCircle(self, circleImagePath, circleWidthPixel, circleHeightPixel, number):
         print("_createNumImageWithinCircle")
@@ -39,7 +44,7 @@ class SeqBoardCreator:
         return self._createResizedImage(self.params.backgroundImagePath, self.params.widthPixel, self.params.heightPixel)
 
     def _createResizedImage(self, targetImagePath, targetWidthPixel, targetHeightPixel):
-        print("_createResizedImage, targetImagePath : [{}]".format(targetImagePath))
+        print("_createResizedImage")
         img = cv2.imread(targetImagePath, cv2.IMREAD_UNCHANGED)
 
         if img.shape[2] != 4 : ## get Image channel
@@ -48,23 +53,18 @@ class SeqBoardCreator:
         return cv2.resize(img, (targetWidthPixel, targetHeightPixel))
 
     def _overlayImage(self, baseImage, overlayImage, offsetX, offsetY):
-        print("_overlayImage, overlayImage.shape[0] : [{}], overlayImage.shape[1] : [{}], overlayImage.shape[2] : [{}]".format(overlayImage.shape[0], overlayImage.shape[1], overlayImage.shape[2]))
-        print(
-        "_overlayImage, baseImage.shape[0] : [{}], baseImage.shape[1] : [{}], baseImage.shape[2] : [{}]".format(
-            baseImage.shape[0], baseImage.shape[1], baseImage.shape[2]))
-
         baseImage[offsetY:offsetY + overlayImage.shape[0], offsetX:offsetX + overlayImage.shape[1]] = overlayImage
         ## baseImage = self.overlay_transparent(baseImage, overlayImage, offsetX, offsetY)
 
-    def _writeImageFiles(self, outputImages):
+    def _writeImageFiles(self, outputImages, temp):
         print("_writeImageFiles")
-        for i in xrange(outputImages) :
-            filename = self._getOutputFileName(self.params.outputDirPath, i)
+        for i in xrange(len(outputImages)) :
+            filename = self._getOutputFileName(self.params.outputDirPath, temp)
             cv2.imwrite(filename, outputImages[i])
 
     def _getOutputFileName(self, outputDir, i):
         print("_getOutputFileName")
-        return outputDir + "/" + str(i)
+        return outputDir + "/" + str(i) + ".jpg"
 
     def _getIndexOfImagePath(self, image):
         print("_getIndexOfImage")
@@ -80,16 +80,17 @@ class SeqBoardCreator:
         while indexOfPath < len(fillImagePaths) :
 
             baseImage = self._createBackgroundImage()
-            print "[DEBUG-POINT] baseImage : [{}]".format(self.params.backgroundImagePath)
             for row in xrange(self.params.numOfRows):
                 for col in xrange(self.params.numOfCols):
-                    offsetX = int((self.params.heightPixel / self.params.numOfCols) * col)
-                    offsetY = int((self.params.widthPixel / self.params.numOfRows) * row)
+                    if indexOfPath >= len(fillImagePaths):
+                        break
+
+                    offsetX = int((self.params.widthPixel / self.params.numOfCols) * col)
+                    offsetY = int((self.params.heightPixel / self.params.numOfRows) * row)
                     notPickedImagePath = fillImagePaths[indexOfPath]
                     indexOfPath += 1
 
                     resizedImage = self._createResizedImage(notPickedImagePath, thumbnailWidth, thumbnailHeight)
-                    print "[DEBUG-POINT] _createResizedImage : [{}]".format(notPickedImagePath)
                     self._overlayImage(baseImage,
                                        resizedImage,
                                        offsetX + self.paddingLeftPixel,
@@ -105,9 +106,11 @@ class SeqBoardCreator:
                                        offsetX + (self.params.widthPixel / self.params.numOfCols) - self.circleWidthPixel,
                                        offsetY + (self.params.heightPixel / self.params.numOfRows) - self.circleHeightPixel)
 
-                    print (self.params.outputDirPath + "/" + str(indexOfPath) + ".jpg")
-                    cv2.imwrite(self.params.outputDirPath + "/" + str(indexOfPath) + ".jpg", baseImage)
-            overlayImages.append(baseImage)
+                    ## debug writing
+                    # print ("[DEBUG-WRITING] " + str(self.params.outputDirPath) + "/" + str(indexOfPath) + ".jpg")
+                    # cv2.imwrite(self.params.outputDirPath + "/" + str(indexOfPath) + ".jpg", baseImage)
+
+            overlayImages.append(baseImage.copy())
         return overlayImages
 
     def OverlayImage(self, src, overlay, posx, posy):
