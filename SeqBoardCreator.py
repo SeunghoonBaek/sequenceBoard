@@ -25,8 +25,8 @@ class SeqBoardCreator:
 
         notPickedOutputImages = self._getOverlayImages(notPickedOutputImagePaths)
 
-        self._writeImageFiles(pickedOutputImages, 1)
-        self._writeImageFiles(notPickedOutputImages, 2)
+        self._writeImageFiles(pickedOutputImages, "picked")
+        self._writeImageFiles(notPickedOutputImages, "notpicked")
 
     def _createNumImageWithinCircle(self, circleImagePath, circleWidthPixel, circleHeightPixel, number):
         print("_createNumImageWithinCircle")
@@ -68,15 +68,16 @@ class SeqBoardCreator:
         for c in range(0, 3):
             baseImage[y1:y2, x1:x2, c] = (alpha_overlay * overlayImage[:, :, c] + alpha_base * baseImage[y1:y2, x1:x2, c])
 
-    def _writeImageFiles(self, outputImages, temp):
+    def _writeImageFiles(self, outputImages, prefixStr):
         print("_writeImageFiles")
         for i in xrange(len(outputImages)) :
-            filename = self._getOutputFileName(self.params.outputDirPath, temp)
+            filename = "{}_{}".format(prefixStr, i)
+            filename = self._getOutputFileName(self.params.outputDirPath, filename)
             cv2.imwrite(filename, outputImages[i])
 
-    def _getOutputFileName(self, outputDir, i):
+    def _getOutputFileName(self, outputDir, filename):
         print("_getOutputFileName")
-        return outputDir + "/" + str(i) + ".jpg"
+        return outputDir + "/" + filename + ".jpg"
 
     def _getIndexOfImagePath(self, image):
         print("_getIndexOfImage")
