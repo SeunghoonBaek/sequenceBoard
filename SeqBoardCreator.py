@@ -32,13 +32,17 @@ class SeqBoardCreator:
         print("_createNumImageWithinCircle")
         circleImage = self._createResizedImage(circleImagePath, circleWidthPixel, circleHeightPixel)
 
-        cv2.putText(circleImage,
-                    "{}".format(number),
-                    (int(circleWidthPixel * 0.5), int(circleHeightPixel * 0.5)),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1.0,
-                    (255, 255, 255, 255),
-                    4)
+        text = "{}".format(number)
+        fontFace = cv2.FONT_HERSHEY_SIMPLEX
+        fontScale = circleImage.shape[0] / 60.0     ## the scalar 60.0 is experimental value.
+        thickness = int(circleImage.shape[0] / 30)  ## the scalar 30 is experimental value.
+
+        ## refer to : https://gist.github.com/xcsrz/8938a5d4a47976c745407fe2788c813a
+        (textSize, baseline) = cv2.getTextSize(text, fontFace, fontScale, thickness)
+        textX = (circleImage.shape[1] - textSize[0]) / 2
+        textY = (circleImage.shape[0] - textSize[1]) / 2 + (baseline * 2)
+
+        cv2.putText(circleImage, text, (textX, textY), fontFace, fontScale, (255, 255, 255, 255), thickness)
         return circleImage
 
     def _createBackgroundImage(self):
