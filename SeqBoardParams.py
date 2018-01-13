@@ -8,4 +8,6 @@ class SeqBoardParams:
         backgroundImagePath = []
         originImagePaths = []
         pickedImagePaths = []
+        pickedBGColorBGRA = (255, 194, 153, 204)
+        notPickedBGColorBGRA = (0, 0, 0, 0)
         outputDirPath = ""

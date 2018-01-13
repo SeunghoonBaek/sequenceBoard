@@ -8,6 +8,8 @@ def getSeqBoardParams() :
     params.numOfRows = 3
     params.numOfCols = 3
     params.circleImagePath = "images/circle.png"
+    params.pickedBGColorBGRA = (255, 200, 153, 230)
+    params.notPickedBGColorBGRA = (0, 0, 0, 0)
     params.backgroundImagePath = "images/background.jpg"
     params.originImagePaths = [
         "images/1.jpg",
@@ -20,7 +22,8 @@ def getSeqBoardParams() :
         "images/8.jpg",
         "images/9.jpg",
         "images/10.jpg",
-        "images/11.jpg"]
+        "images/11.jpg",
+        "images/12.jpg"]
 
     params.pickedImagePaths = [
         "images/1.jpg",
