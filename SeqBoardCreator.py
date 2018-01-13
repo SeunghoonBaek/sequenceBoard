@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 class SeqBoardCreator:
     def __init__(self, params):
@@ -17,16 +18,13 @@ class SeqBoardCreator:
 
     def _cretaeSequenceBoardImages(self):
         print("_cretaeSequenceBoardImages")
-        pickedOutputImages = self._getOverlayImages(self.params.pickedImagePaths)
-
         notPickedOutputImagePaths = list(self.params.originImagePaths)
         for pickedImagePath in self.params.pickedImagePaths:
             notPickedOutputImagePaths.remove(pickedImagePath)
 
-        notPickedOutputImages = self._getOverlayImages(notPickedOutputImagePaths)
+        pickedOutputImages = self._getOverlayImages(self.params.pickedImagePaths, notPickedOutputImagePaths, self.params.pickedBGColorBGRA, self.params.notPickedBGColorBGRA)
 
-        self._writeImageFiles(pickedOutputImages, "picked")
-        self._writeImageFiles(notPickedOutputImages, "notpicked")
+        self._writeImageFiles(pickedOutputImages, "resource_dashboard")
 
     def _createNumImageWithinCircle(self, circleImagePath, circleWidthPixel, circleHeightPixel, number):
         print("_createNumImageWithinCircle")
@@ -83,33 +81,55 @@ class SeqBoardCreator:
         print("_getIndexOfImage")
         return self.params.originImagePaths.index(image)
 
-    def _getOverlayImages(self, fillImagePaths):
+    def _getOverlayImages(self, pickedImagePaths, notPickedImagePaths, pickedBGColorBGRA, notPickedBGColorBGRA):
         print("_getOverlayImages")
         overlayImages = []
-        thumbnailWidth = int((self.params.widthPixel / self.params.numOfCols) - (self.paddingLeftPixel + self.paddingRightPixel))
-        thumbnailHeight = int((self.params.heightPixel / self.params.numOfRows) - (self.paddingTopPixel + self.paddingBottomPixel))
+        bgWidth = int(self.params.widthPixel / self.params.numOfCols)
+        bgHeight = int(self.params.heightPixel / self.params.numOfRows)
+        thumbnailWidth = int(bgWidth - (self.paddingLeftPixel + self.paddingRightPixel))
+        thumbnailHeight = int(bgHeight - (self.paddingTopPixel + self.paddingBottomPixel))
 
-        indexOfPath = 0
-        while indexOfPath < len(fillImagePaths) :
+        indexOfImages = 0
+        numAllImages = len(pickedImagePaths) + len(notPickedImagePaths)
+
+        overlayTargetImagePaths = pickedImagePaths
+        overlayBGImgColor       = pickedBGColorBGRA
+        compensativeIndex       = 0
+
+        while indexOfImages < numAllImages :
 
             baseImage = self._createBackgroundImage()
             for row in xrange(self.params.numOfRows):
                 for col in xrange(self.params.numOfCols):
-                    if indexOfPath >= len(fillImagePaths):
+
+                    # Exit the for loop if the images not exist that should be overlay.
+                    if indexOfImages >= numAllImages :
                         break
+
+                    # Change the given lists
+                    if indexOfImages >= len(pickedImagePaths):
+                        overlayTargetImagePaths = notPickedImagePaths
+                        overlayBGImgColor = notPickedBGColorBGRA
+                        compensativeIndex = len(pickedImagePaths)
 
                     offsetX = int((self.params.widthPixel / self.params.numOfCols) * col)
                     offsetY = int((self.params.heightPixel / self.params.numOfRows) * row)
-                    notPickedImagePath = fillImagePaths[indexOfPath]
-                    indexOfPath += 1
+                    imagePath = overlayTargetImagePaths[indexOfImages - compensativeIndex]
+                    indexOfImages += 1
 
-                    resizedImage = self._createResizedImage(notPickedImagePath, thumbnailWidth, thumbnailHeight)
+                    resizedImage = self._createResizedImage(imagePath, thumbnailWidth, thumbnailHeight)
+                    overlayBgImage = np.ones((bgHeight, bgWidth, 4), np.uint8) * overlayBGImgColor
+                    self._overlayImage(baseImage,
+                                       overlayBgImage,
+                                       offsetX,
+                                       offsetY)
+
                     self._overlayImage(baseImage,
                                        resizedImage,
                                        offsetX + self.paddingLeftPixel,
                                        offsetY + self.paddingTopPixel)
 
-                    circleNum = self._getIndexOfImagePath(notPickedImagePath)
+                    circleNum = self._getIndexOfImagePath(imagePath)
                     circleImage = self._createNumImageWithinCircle(self.params.circleImagePath,
                                                                    self.circleWidthPixel,
                                                                    self.circleHeightPixel,
